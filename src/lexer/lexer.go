@@ -27,8 +27,6 @@ func is_letter(ch byte) bool {
 
 // Read character from input. Null(0) character indicates EOF
 func (lex *Lexer) read_char() {
-	// fmt.Printf("input[%d] = %c\n", lex.read_position, lex.input[lex.read_position])
-
 	if lex.read_position >= len(lex.input) {
 		lex.ch = 0
 	} else {
@@ -101,6 +99,18 @@ func (lex *Lexer) NextToken() token.Token {
 		tok = new_token(token.LBRACE, lex.ch)
 	case '}':
 		tok = new_token(token.RBRACE, lex.ch)
+	case '-':
+		tok = new_token(token.MINUS, lex.ch)
+	case '!':
+		tok = new_token(token.BANG, lex.ch)
+	case '/':
+		tok = new_token(token.SLASH, lex.ch)
+	case '*':
+		tok = new_token(token.ASTERISK, lex.ch)
+	case '<':
+		tok = new_token(token.LT, lex.ch)
+	case '>':
+		tok = new_token(token.GT, lex.ch)
 	default:
 		if is_letter(lex.ch) {
 			literal := lex.read_identifier()
