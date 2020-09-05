@@ -11,7 +11,24 @@ type Lexer struct {
 	read_position int
 }
 
+func new_token(token_type token.TokenType, ch byte) token.Token {
+	return token.Token{Type: token_type, Literal: string(ch)}
+}
+
+func is_digit(ch byte) bool {
+	return '0' <= ch && ch <= '9'
+}
+
+// Test if ascii letter
+// TODO :: Allow unicode in identifiers
+func is_letter(ch byte) bool {
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+}
+
+// Read character from input. Null(0) character indicates EOF
 func (lex *Lexer) read_char() {
+	// fmt.Printf("input[%d] = %c\n", lex.read_position, lex.input[lex.read_position])
+
 	if lex.read_position >= len(lex.input) {
 		lex.ch = 0
 	} else {
@@ -22,11 +39,36 @@ func (lex *Lexer) read_char() {
 	lex.read_position += 1
 }
 
-func new_token(token_type token.TokenType, ch byte) token.Token {
-	return token.Token{Type: token_type, Literal: string(ch)}
+func (lex *Lexer) read_number() string {
+	position := lex.position
+
+	for is_digit(lex.ch) {
+		lex.read_char()
+	}
+
+	return lex.input[position:lex.position]
 }
 
-// Exported
+func (lex *Lexer) read_identifier() string {
+	position := lex.position
+
+	// Read characters of identifier
+	for is_letter(lex.ch) {
+		lex.read_char()
+	}
+
+	// Return slice containing identifier string
+	return lex.input[position:lex.position]
+}
+
+// Advance lexer character if whitespace detected
+func (lex *Lexer) skip_whitespace() {
+	for lex.ch == ' ' || lex.ch == '\t' || lex.ch == '\n' || lex.ch == '\r' {
+		lex.read_char()
+	}
+}
+
+// Exports
 
 func New(input string) *Lexer {
 	lex := &Lexer{input: input}
@@ -37,6 +79,8 @@ func New(input string) *Lexer {
 
 func (lex *Lexer) NextToken() token.Token {
 	var tok token.Token
+
+	lex.skip_whitespace()
 
 	switch lex.ch {
 	case 0:
@@ -57,6 +101,18 @@ func (lex *Lexer) NextToken() token.Token {
 		tok = new_token(token.LBRACE, lex.ch)
 	case '}':
 		tok = new_token(token.RBRACE, lex.ch)
+	default:
+		if is_letter(lex.ch) {
+			literal := lex.read_identifier()
+
+			// Early exit prevents read_char from advancing
+			return token.Token{Type: token.LookupIdent(literal), Literal: literal}
+		} else if is_digit(lex.ch) {
+			tok = token.Token{Type: token.INT, Literal: lex.read_number()}
+			return tok
+		} else {
+			tok = new_token(token.ILLEGAL, lex.ch)
+		}
 	}
 
 	lex.read_char()

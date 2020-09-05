@@ -1,5 +1,22 @@
 package token
 
+const (
+	EOF       = "EOF"
+	INT       = "INT"
+	LET       = "LET"
+	PLUS      = "+"
+	COMMA     = ","
+	IDENT     = "IDENT"
+	ASSIGN    = "="
+	LBRACE    = "{"
+	LPAREN    = "("
+	RBRACE    = "}"
+	RPAREN    = ")"
+	ILLEGAL   = "ILLEGAL"
+	FUNCTION  = "FUNCTION"
+	SEMICOLON = ";"
+)
+
 type TokenType string
 
 type Token struct {
@@ -7,23 +24,16 @@ type Token struct {
 	Literal string
 }
 
-const (
-	EOF     = "EOF"
-	ILLEGAL = "ILLEGAL"
-	INT     = "INT"
-	IDENT   = "IDENT"
+var keywords = map[string]TokenType{
+	"fn":  FUNCTION,
+	"let": LET,
+}
 
-	PLUS   = "+"
-	ASSIGN = "="
+// If token is a reserved word return it, otherwise consider it an identifier
+func LookupIdent(ident string) TokenType {
+	if tok, ok := keywords[ident]; ok {
+		return tok
+	}
 
-	COMMA     = ","
-	SEMICOLON = ";"
-
-	LPAREN = "("
-	RPAREN = ")"
-	LBRACE = "{"
-	RBRACE = "}"
-
-	LET      = "LET"
-	FUNCTION = "FUNCTION"
-)
+	return IDENT
+}
