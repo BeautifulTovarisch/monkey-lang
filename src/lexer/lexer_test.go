@@ -18,7 +18,10 @@ if (5 < 10) {
   return true;
 } else {
   return false;
-}`
+}
+
+10 == 10;
+10 != 9;`
 
 	expected := []struct {
 		expectedType    token.TokenType
@@ -89,6 +92,14 @@ if (5 < 10) {
 		{token.FALSE, "false"},
 		{token.SEMICOLON, ";"},
 		{token.RBRACE, "}"},
+		{token.INT, "10"},
+		{token.EQ, "=="},
+		{token.INT, "10"},
+		{token.SEMICOLON, ";"},
+		{token.INT, "10"},
+		{token.NE, "!="},
+		{token.INT, "9"},
+		{token.SEMICOLON, ";"},
 		{token.EOF, ""},
 	}
 
@@ -98,12 +109,12 @@ if (5 < 10) {
 		token := lex.NextToken()
 
 		if token.Type != tok.expectedType {
-			t.Fatalf("expected[%d] - Wrong token. Expected: %q, got %q",
+			t.Fatalf("expected[%d] - Wrong token. Expected: %q, Got: %q",
 				index, tok.expectedType, token.Type)
 		}
 
 		if token.Literal != tok.expectedLiteral {
-			t.Fatalf("expected[%d] - Wrong literal. Expected: %q, got %q",
+			t.Fatalf("expected[%d] - Wrong literal. Expected: %q, Got: %q",
 				index, tok.expectedLiteral, token.Literal)
 		}
 	}

@@ -1,9 +1,11 @@
 package token
 
 const (
+	EQ        = "=="
 	IF        = "IF"
-	LT        = "<"
 	GT        = ">"
+	LT        = "<"
+	NE        = "!+"
 	EOF       = "EOF"
 	INT       = "INT"
 	LET       = "LET"

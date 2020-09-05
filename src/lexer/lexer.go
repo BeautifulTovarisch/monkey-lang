@@ -37,6 +37,15 @@ func (lex *Lexer) read_char() {
 	lex.read_position += 1
 }
 
+// Peek ahead without incrementing stream
+func (lex *Lexer) peek_char() byte {
+	if lex.read_position >= len(lex.input) {
+		return 0
+	}
+
+	return lex.input[lex.read_position]
+}
+
 func (lex *Lexer) read_number() string {
 	position := lex.position
 
@@ -84,7 +93,13 @@ func (lex *Lexer) NextToken() token.Token {
 	case 0:
 		tok = token.Token{Type: token.EOF, Literal: ""}
 	case '=':
-		tok = new_token(token.ASSIGN, lex.ch)
+		// if another '=' found, advance one char and assign '=='
+		if lex.peek_char() == '=' {
+			lex.read_char()
+			tok = token.Token{Type: token.EQ, Literal: "=="}
+		} else {
+			tok = new_token(token.ASSIGN, lex.ch)
+		}
 	case ';':
 		tok = new_token(token.SEMICOLON, lex.ch)
 	case '(':
@@ -102,7 +117,12 @@ func (lex *Lexer) NextToken() token.Token {
 	case '-':
 		tok = new_token(token.MINUS, lex.ch)
 	case '!':
-		tok = new_token(token.BANG, lex.ch)
+		if lex.peek_char() == '=' {
+			lex.read_char()
+			tok = token.Token{Type: token.NE, Literal: "!="}
+		} else {
+			tok = new_token(token.BANG, lex.ch)
+		}
 	case '/':
 		tok = new_token(token.SLASH, lex.ch)
 	case '*':
