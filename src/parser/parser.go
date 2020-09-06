@@ -1,21 +1,31 @@
 package parser
 
 import (
+	"fmt"
+
 	"monkey/ast"
 	"monkey/lexer"
 	"monkey/token"
 )
 
 type Parser struct {
+	errors []string
+
+	lex        *lexer.Lexer
 	cur_token  token.Token
 	peek_token token.Token
-
-	lex *lexer.Lexer
 }
 
 func (psr *Parser) next_token() {
 	psr.cur_token = psr.peek_token
 	psr.peek_token = psr.lex.NextToken()
+}
+
+// Append message to errors if next token is not the expected type
+func (psr *Parser) peek_error(tok token.TokenType) {
+	msg := fmt.Sprintf("Unexpected token. Expected '%s'. Got '%s'.", tok, psr.peek_token.Type)
+
+	psr.errors = append(psr.errors, msg)
 }
 
 func (psr *Parser) cur_token_is(tok token.TokenType) bool {
@@ -32,6 +42,7 @@ func (psr *Parser) expect_peek(tok token.TokenType) bool {
 		return true
 	}
 
+	psr.peek_error(tok)
 	return false
 }
 
@@ -56,10 +67,25 @@ func (psr *Parser) parse_let_statement() *ast.LetStatement {
 	return stmt
 }
 
-func (psr *Parser) parse_statement() *ast.LetStatement {
+func (psr *Parser) parse_return_statement() *ast.ReturnStatement {
+	stmt := &ast.ReturnStatement{Token: psr.cur_token}
+
+	psr.next_token()
+
+	// TODO :: Implement expressions
+	for !psr.cur_token_is(token.SEMICOLON) {
+		psr.next_token()
+	}
+
+	return stmt
+}
+
+func (psr *Parser) parse_statement() ast.Statement {
 	switch psr.cur_token.Type {
 	case token.LET:
 		return psr.parse_let_statement()
+	case token.RETURN:
+		return psr.parse_return_statement()
 	default:
 		return nil
 	}
@@ -68,12 +94,16 @@ func (psr *Parser) parse_statement() *ast.LetStatement {
 // Exported
 
 func New(lex *lexer.Lexer) *Parser {
-	psr := &Parser{lex: lex}
+	psr := &Parser{lex: lex, errors: []string{}}
 
 	psr.next_token()
 	psr.next_token()
 
 	return psr
+}
+
+func (psr *Parser) Errors() []string {
+	return psr.errors
 }
 
 func (psr *Parser) ParseProgram() *ast.Program {

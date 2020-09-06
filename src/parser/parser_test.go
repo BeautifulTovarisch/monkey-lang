@@ -33,17 +33,35 @@ func test_let_statement(t *testing.T, stmt ast.Statement, name string) bool {
 	return true
 }
 
+func check_parser_errors(t *testing.T, psr *Parser) {
+	errors := psr.Errors()
+
+	if len(errors) == 0 {
+		return
+	}
+
+	t.Errorf("Parser found %d errors:", len(errors))
+
+	for i, msg := range errors {
+		t.Errorf("%d:\t%q\n", i, msg)
+	}
+
+	t.FailNow()
+}
+
 func TestLetStatements(t *testing.T) {
 	input := `
-let x = 5;
-let y = 10;
-let foobar = 838383;
-`
+	let x = 5;
+	let y = 10;
+	let foobar = 838383;
+	`
 
 	lex := lexer.New(input)
 	psr := New(lex)
 
 	program := psr.ParseProgram()
+
+	check_parser_errors(t, psr)
 
 	if program == nil {
 		t.Fatalf("ParseProgram() returned nil.")
@@ -65,6 +83,38 @@ let foobar = 838383;
 	for i, ident := range identifiers {
 		if !test_let_statement(t, program.Statements[i], ident.expected_identfier) {
 			return
+		}
+	}
+}
+
+func TestReturnStatements(t *testing.T) {
+	input := `
+return 5;
+return 10;
+return 993222;
+`
+
+	lex := lexer.New(input)
+	psr := New(lex)
+
+	program := psr.ParseProgram()
+
+	check_parser_errors(t, psr)
+
+	if len(program.Statements) != 3 {
+		t.Fatalf("len(program.Statements) incorrect. Expected: 3. Got: %d",
+			len(program.Statements))
+	}
+
+	for _, stmt := range program.Statements {
+		ret_stmt, ok := stmt.(*ast.ReturnStatement)
+
+		if !ok {
+			t.Errorf("Unexpected Type: %T", stmt)
+		}
+
+		if ret_stmt.TokenLiteral() != "return" {
+			t.Errorf("Unexpected Token. Expected: 'return'. Got: %q.", ret_stmt.TokenLiteral())
 		}
 	}
 }
