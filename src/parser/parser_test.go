@@ -151,3 +151,37 @@ func TestIdentifierExpression(t *testing.T) {
 		t.Errorf("Incorrect token. Expected 'foobar'. Got: %s", ident.TokenLiteral())
 	}
 }
+
+func TestIntegerLiteralExpressions(t *testing.T) {
+	input := "5;"
+
+	lex := lexer.New(input)
+	psr := New(lex)
+
+	program := psr.ParseProgram()
+
+	check_parser_errors(t, psr)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("Wrong number of statements. Got: %d", len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Unexpected type: %T for statement.", program.Statements[0])
+	}
+
+	literal, ok := stmt.Expression.(*ast.IntegerLiteral)
+	if !ok {
+		t.Fatalf("Unexpected type: %T for expression", stmt.Expression)
+	}
+
+	if literal.Value != 5 {
+		t.Errorf("Incorrect Value: %d. Expected 5", literal.Value)
+	}
+
+	if literal.TokenLiteral() != "5" {
+		t.Errorf("Incorrect TokenLiteral %s. Expected 5", literal.TokenLiteral())
+	}
+
+}
