@@ -8,12 +8,32 @@ import (
 	"monkey/token"
 )
 
+// Operator precedence
+const (
+	_ int = iota
+	LOWEST
+	EQUALS
+	LESSGREATER
+	SUM
+	PRODUCT
+	PREFIX
+	CALL
+)
+
+type (
+	infix_parse_fn  func(ast.Expression) ast.Expression
+	prefix_parse_fn func() ast.Expression
+)
+
 type Parser struct {
 	errors []string
 
 	lex        *lexer.Lexer
 	cur_token  token.Token
 	peek_token token.Token
+
+	infix_parse_fns  map[token.TokenType]infix_parse_fn
+	prefix_parse_fns map[token.TokenType]prefix_parse_fn
 }
 
 func (psr *Parser) next_token() {
@@ -80,6 +100,35 @@ func (psr *Parser) parse_return_statement() *ast.ReturnStatement {
 	return stmt
 }
 
+func (psr *Parser) parse_identifer() ast.Expression {
+	return &ast.Identifier{Token: psr.cur_token, Value: psr.cur_token.Literal}
+}
+
+func (psr *Parser) parse_expression(precedence int) ast.Expression {
+	prefix := psr.prefix_parse_fns[psr.cur_token.Type]
+
+	if prefix == nil {
+		return nil
+	}
+
+	left_expr := prefix()
+
+	return left_expr
+}
+
+func (psr *Parser) parse_expression_statement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{
+		Token:      psr.cur_token,
+		Expression: psr.parse_expression(LOWEST),
+	}
+
+	if psr.peek_token_is(token.SEMICOLON) {
+		psr.next_token()
+	}
+
+	return stmt
+}
+
 func (psr *Parser) parse_statement() ast.Statement {
 	switch psr.cur_token.Type {
 	case token.LET:
@@ -87,8 +136,16 @@ func (psr *Parser) parse_statement() ast.Statement {
 	case token.RETURN:
 		return psr.parse_return_statement()
 	default:
-		return nil
+		return psr.parse_expression_statement()
 	}
+}
+
+func (psr *Parser) register_infix(token_type token.TokenType, fn infix_parse_fn) {
+	psr.infix_parse_fns[token_type] = fn
+}
+
+func (psr *Parser) register_prefix(token_type token.TokenType, fn prefix_parse_fn) {
+	psr.prefix_parse_fns[token_type] = fn
 }
 
 // Exported
@@ -98,6 +155,10 @@ func New(lex *lexer.Lexer) *Parser {
 
 	psr.next_token()
 	psr.next_token()
+
+	// Associate parsing functions
+	psr.prefix_parse_fns = make(map[token.TokenType]prefix_parse_fn)
+	psr.register_prefix(token.IDENT, psr.parse_identifer)
 
 	return psr
 }

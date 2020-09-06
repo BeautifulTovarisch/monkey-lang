@@ -16,7 +16,7 @@ func test_let_statement(t *testing.T, stmt ast.Statement, name string) bool {
 	let_stmt, ok := stmt.(*ast.LetStatement)
 
 	if !ok {
-		t.Errorf("Invalid Type for 'stmt'. Expected '*ast.LetStatement'. Got: %T", stmt)
+		t.Errorf("Invalid type for 'stmt'. Expected '*ast.LetStatement'. Got: %T", stmt)
 		return false
 	}
 
@@ -110,11 +110,44 @@ return 993222;
 		ret_stmt, ok := stmt.(*ast.ReturnStatement)
 
 		if !ok {
-			t.Errorf("Unexpected Type: %T", stmt)
+			t.Errorf("Unexpected type: %T", stmt)
 		}
 
 		if ret_stmt.TokenLiteral() != "return" {
 			t.Errorf("Unexpected Token. Expected: 'return'. Got: %q.", ret_stmt.TokenLiteral())
 		}
+	}
+}
+
+func TestIdentifierExpression(t *testing.T) {
+	input := "foobar;"
+
+	lex := lexer.New(input)
+	psr := New(lex)
+
+	program := psr.ParseProgram()
+
+	check_parser_errors(t, psr)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("Wrong number of statements. Got: %d", len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Statement Unexpected type: %T", program.Statements[0])
+	}
+
+	ident, ok := stmt.Expression.(*ast.Identifier)
+	if !ok {
+		t.Fatalf("Expression Unexpected type: %T", stmt.Expression)
+	}
+
+	if ident.Value != "foobar" {
+		t.Errorf("Incorrect identifier. Expected: 'foobar'. Got: '%s'.", ident.Value)
+	}
+
+	if ident.TokenLiteral() != "foobar" {
+		t.Errorf("Incorrect token. Expected 'foobar'. Got: %s", ident.TokenLiteral())
 	}
 }

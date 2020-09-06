@@ -69,10 +69,12 @@ func (prog *Program) TokenLiteral() string {
 	return ""
 }
 
+// Identifier
 func (id *Identifier) expression_node()     {}
 func (id *Identifier) String() string       { return id.Value }
 func (id *Identifier) TokenLiteral() string { return id.Token.Literal }
 
+// LetStatement
 func (let *LetStatement) statement_node() {}
 func (let *LetStatement) String() string {
 	var out bytes.Buffer
@@ -91,6 +93,7 @@ func (let *LetStatement) String() string {
 }
 func (let *LetStatement) TokenLiteral() string { return let.Token.Literal }
 
+// ReturnStatement
 func (ret *ReturnStatement) statement_node() {}
 func (ret *ReturnStatement) String() string {
 	var out bytes.Buffer
@@ -107,6 +110,7 @@ func (ret *ReturnStatement) String() string {
 }
 func (ret *ReturnStatement) TokenLiteral() string { return ret.Token.Literal }
 
+// ExpressionStatement
 func (ret *ExpressionStatement) statement_node() {}
 func (ret *ExpressionStatement) String() string {
 	if ret.Expression != nil {
