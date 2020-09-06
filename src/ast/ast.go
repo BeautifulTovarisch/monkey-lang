@@ -1,10 +1,13 @@
 package ast
 
 import (
+	"bytes"
+
 	"monkey/token"
 )
 
 type Node interface {
+	String() string
 	TokenLiteral() string
 }
 
@@ -39,6 +42,24 @@ type ReturnStatement struct {
 	ReturnValue Expression
 }
 
+type ExpressionStatement struct {
+	Token      token.Token
+	Expression Expression
+}
+
+/* Implement String() method for all nodes
+* Allows returning structure of program as a string for easy debugging
+ */
+func (prog *Program) String() string {
+	var out bytes.Buffer
+
+	for _, stmt := range prog.Statements {
+		out.WriteString(stmt.String())
+	}
+
+	return out.String()
+}
+
 // Return first token of statement or nothing
 func (prog *Program) TokenLiteral() string {
 	if len(prog.Statements) > 0 {
@@ -49,10 +70,49 @@ func (prog *Program) TokenLiteral() string {
 }
 
 func (id *Identifier) expression_node()     {}
+func (id *Identifier) String() string       { return id.Value }
 func (id *Identifier) TokenLiteral() string { return id.Token.Literal }
 
-func (let *LetStatement) statement_node()      {}
+func (let *LetStatement) statement_node() {}
+func (let *LetStatement) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(let.TokenLiteral() + " ")
+	out.WriteString(let.Name.String())
+	out.WriteString(" = ")
+
+	if let.Value != nil {
+		out.WriteString(let.Value.String())
+	}
+
+	out.WriteString(";")
+
+	return out.String()
+}
 func (let *LetStatement) TokenLiteral() string { return let.Token.Literal }
 
-func (ret *ReturnStatement) statement_node()      {}
+func (ret *ReturnStatement) statement_node() {}
+func (ret *ReturnStatement) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(ret.TokenLiteral() + " ")
+
+	if ret.ReturnValue != nil {
+		out.WriteString(ret.ReturnValue.String())
+	}
+
+	out.WriteString(";")
+
+	return out.String()
+}
 func (ret *ReturnStatement) TokenLiteral() string { return ret.Token.Literal }
+
+func (ret *ExpressionStatement) statement_node() {}
+func (ret *ExpressionStatement) String() string {
+	if ret.Expression != nil {
+		return ret.Expression.String()
+	}
+
+	return ""
+}
+func (ret *ExpressionStatement) TokenLiteral() string { return ret.Token.Literal }
