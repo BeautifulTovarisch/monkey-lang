@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"testing"
 
 	"monkey/ast"
@@ -48,6 +49,28 @@ func check_parser_errors(t *testing.T, psr *Parser) {
 
 	t.FailNow()
 }
+
+func test_integer_literal(t *testing.T, i_lit ast.Expression, value int64) bool {
+	intgr, ok := i_lit.(*ast.IntegerLiteral)
+	if !ok {
+		t.Errorf("Unexpected type: %T for integer literal", i_lit)
+		return false
+	}
+
+	if intgr.Value != value {
+		t.Errorf("Incorrect value %d. Expected %d", intgr.Value, value)
+		return false
+	}
+
+	if intgr.TokenLiteral() != fmt.Sprintf("%d", value) {
+		t.Errorf("Incorrect token literal: %s. Expected %d.", intgr.TokenLiteral(), value)
+		return false
+	}
+
+	return true
+}
+
+// Test Suite
 
 func TestLetStatements(t *testing.T) {
 	input := `
@@ -184,4 +207,46 @@ func TestIntegerLiteralExpressions(t *testing.T) {
 		t.Errorf("Incorrect TokenLiteral %s. Expected 5", literal.TokenLiteral())
 	}
 
+}
+
+func TestParsingPrefixExpressions(t *testing.T) {
+	prefix_tests := []struct {
+		input     string
+		operator  string
+		int_value int64
+	}{
+		{"!5", "!", 5},
+		{"-15", "-", 15},
+	}
+
+	for _, test := range prefix_tests {
+		lex := lexer.New(test.input)
+		psr := New(lex)
+
+		program := psr.ParseProgram()
+
+		check_parser_errors(t, psr)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("Wrong number of statements: %d", len(program.Statements))
+		}
+
+		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("Unexpected type: %T for statement.", program.Statements[0])
+		}
+
+		exp, ok := stmt.Expression.(*ast.PrefixExpression)
+		if !ok {
+			t.Fatalf("Unexpected type: %T for expression", stmt.Expression)
+		}
+
+		if exp.Operator != test.operator {
+			t.Fatalf("Unexpected operator %s. Expected %s.", exp.Operator, test.operator)
+		}
+
+		if !test_integer_literal(t, exp.Right, test.int_value) {
+			return
+		}
+	}
 }

@@ -47,6 +47,12 @@ type ReturnStatement struct {
 	ReturnValue Expression
 }
 
+type PrefixExpression struct {
+	Right    Expression
+	Token    token.Token
+	Operator string
+}
+
 type ExpressionStatement struct {
 	Token      token.Token
 	Expression Expression
@@ -119,6 +125,20 @@ func (ret *ReturnStatement) String() string {
 	return out.String()
 }
 func (ret *ReturnStatement) TokenLiteral() string { return ret.Token.Literal }
+
+// PrefixExpression
+func (pre *PrefixExpression) expression_node() {}
+func (pre *PrefixExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(pre.Operator)
+	out.WriteString(pre.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}
+func (pre *PrefixExpression) TokenLiteral() string { return pre.Token.Literal }
 
 // ExpressionStatement
 func (ret *ExpressionStatement) statement_node() {}

@@ -105,10 +105,16 @@ func (psr *Parser) parse_identifer() ast.Expression {
 	return &ast.Identifier{Token: psr.cur_token, Value: psr.cur_token.Literal}
 }
 
+func (psr *Parser) no_prefix_parse_fn_error(t token.TokenType) {
+	msg := fmt.Sprintf("no prefix parse function for %s found", t)
+	psr.errors = append(psr.errors, msg)
+}
+
 func (psr *Parser) parse_expression(precedence int) ast.Expression {
 	prefix := psr.prefix_parse_fns[psr.cur_token.Type]
 
 	if prefix == nil {
+		psr.no_prefix_parse_fn_error(psr.cur_token.Type)
 		return nil
 	}
 
@@ -130,6 +136,23 @@ func (psr *Parser) parse_integer_literal() ast.Expression {
 	lit.Value = value
 
 	return lit
+}
+
+/* Parses prefix expressions (such as !5 or -15)
+* Current token either ! or -.
+* function advances token in order to capture expression.
+ */
+func (psr *Parser) parse_prefix_expression() ast.Expression {
+	expression := &ast.PrefixExpression{
+		Token:    psr.cur_token,
+		Operator: psr.cur_token.Literal,
+	}
+
+	psr.next_token()
+
+	expression.Right = psr.parse_expression(PREFIX)
+
+	return expression
 }
 
 func (psr *Parser) parse_expression_statement() *ast.ExpressionStatement {
@@ -176,6 +199,8 @@ func New(lex *lexer.Lexer) *Parser {
 	psr.prefix_parse_fns = make(map[token.TokenType]prefix_parse_fn)
 	psr.register_prefix(token.IDENT, psr.parse_identifer)
 	psr.register_prefix(token.INT, psr.parse_integer_literal)
+	psr.register_prefix(token.BANG, psr.parse_prefix_expression)
+	psr.register_prefix(token.MINUS, psr.parse_prefix_expression)
 
 	return psr
 }
