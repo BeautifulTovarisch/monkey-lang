@@ -250,3 +250,52 @@ func TestParsingPrefixExpressions(t *testing.T) {
 		}
 	}
 }
+
+func TestParsingInfixExpressions(t *testing.T) {
+	infix_tests := []struct {
+		input     string
+		left_val  int64
+		operator  string
+		right_val int64
+	}{
+		{"5 + 5", 5, "+", 5},
+		{"5 - 5", 5, "-", 5},
+		{"5 * 5", 5, "*", 5},
+		{"5 / 5", 5, "/", 5},
+		{"5 > 5", 5, ">", 5},
+		{"5 < 5", 5, "<", 5},
+		{"5 == 5", 5, "==", 5},
+		{"5 != 5", 5, "!=", 5},
+	}
+
+	for _, test := range infix_tests {
+		lex := lexer.New(test.input)
+		psr := New(lex)
+
+		program := psr.ParseProgram()
+
+		check_parser_errors(t, psr)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("Wrong number of statements. Got: %d", len(program.Statements))
+		}
+
+		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("Unexpected type: %T for ExpressionStatement", program.Statements[0])
+		}
+
+		exp, ok := stmt.Expression.(*ast.InfixExpression)
+		if !ok {
+			t.Fatalf("Unexpected type: %T for InfixExpression", stmt.Expression)
+		}
+
+		if exp.Operator != test.operator {
+			t.Fatalf("Unexpected operator: %s. Expected %s", exp.Operator, test.operator)
+		}
+
+		if !test_integer_literal(t, exp.Left, test.left_val) {
+			return
+		}
+	}
+}

@@ -21,6 +21,17 @@ const (
 	CALL
 )
 
+var precedences = map[token.TokenType]int{
+	token.EQ:       EQUALS,
+	token.NE:       EQUALS,
+	token.GT:       LESSGREATER,
+	token.LT:       LESSGREATER,
+	token.PLUS:     SUM,
+	token.MINUS:    SUM,
+	token.SLASH:    PRODUCT,
+	token.ASTERISK: PRODUCT,
+}
+
 type (
 	infix_parse_fn  func(ast.Expression) ast.Expression
 	prefix_parse_fn func() ast.Expression
@@ -47,6 +58,24 @@ func (psr *Parser) peek_error(tok token.TokenType) {
 	msg := fmt.Sprintf("Unexpected token. Expected '%s'. Got '%s'.", tok, psr.peek_token.Type)
 
 	psr.errors = append(psr.errors, msg)
+}
+
+// Determine precedence of next token. Return lowest if not found
+func (psr *Parser) peek_precedence() int {
+	if peek, ok := precedences[psr.peek_token.Type]; ok {
+		return peek
+	}
+
+	return LOWEST
+}
+
+// Retreive precedence of current token
+func (psr *Parser) cur_precendence() int {
+	if cur, ok := precedences[psr.cur_token.Type]; ok {
+		return cur
+	}
+
+	return LOWEST
 }
 
 func (psr *Parser) cur_token_is(tok token.TokenType) bool {
@@ -120,6 +149,18 @@ func (psr *Parser) parse_expression(precedence int) ast.Expression {
 
 	left_expr := prefix()
 
+	// Until ';' is reached
+	for !psr.peek_token_is(token.SEMICOLON) && precedence < psr.peek_precedence() {
+		infix := psr.infix_parse_fns[psr.peek_token.Type]
+		if infix == nil {
+			return left_expr
+		}
+
+		psr.next_token()
+
+		left_expr = infix(left_expr)
+	}
+
 	return left_expr
 }
 
@@ -136,6 +177,20 @@ func (psr *Parser) parse_integer_literal() ast.Expression {
 	lit.Value = value
 
 	return lit
+}
+
+func (psr *Parser) parse_infix_expression(left ast.Expression) ast.Expression {
+	expression := &ast.InfixExpression{
+		Left:     left,
+		Token:    psr.cur_token,
+		Operator: psr.cur_token.Literal,
+	}
+
+	precedence := psr.cur_precendence()
+	psr.next_token()
+	expression.Right = psr.parse_expression(precedence)
+
+	return expression
 }
 
 /* Parses prefix expressions (such as !5 or -15)
@@ -196,11 +251,23 @@ func New(lex *lexer.Lexer) *Parser {
 	psr.next_token()
 
 	// Associate parsing functions
+	psr.infix_parse_fns = make(map[token.TokenType]infix_parse_fn)
 	psr.prefix_parse_fns = make(map[token.TokenType]prefix_parse_fn)
+
 	psr.register_prefix(token.IDENT, psr.parse_identifer)
 	psr.register_prefix(token.INT, psr.parse_integer_literal)
+
 	psr.register_prefix(token.BANG, psr.parse_prefix_expression)
 	psr.register_prefix(token.MINUS, psr.parse_prefix_expression)
+
+	psr.register_infix(token.PLUS, psr.parse_infix_expression)
+	psr.register_infix(token.MINUS, psr.parse_infix_expression)
+	psr.register_infix(token.SLASH, psr.parse_infix_expression)
+	psr.register_infix(token.ASTERISK, psr.parse_infix_expression)
+	psr.register_infix(token.EQ, psr.parse_infix_expression)
+	psr.register_infix(token.NE, psr.parse_infix_expression)
+	psr.register_infix(token.LT, psr.parse_infix_expression)
+	psr.register_infix(token.GT, psr.parse_infix_expression)
 
 	return psr
 }
@@ -218,6 +285,7 @@ func (psr *Parser) ParseProgram() *ast.Program {
 
 	for psr.cur_token.Type != token.EOF {
 		stmt := psr.parse_statement()
+
 		if stmt != nil {
 			program.Statements = append(program.Statements, stmt)
 		}

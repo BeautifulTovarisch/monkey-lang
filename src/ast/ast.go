@@ -32,8 +32,8 @@ type Identifier struct {
 }
 
 type LetStatement struct {
-	Token token.Token
 	Name  *Identifier
+	Token token.Token
 	Value Expression
 }
 
@@ -45,6 +45,13 @@ type IntegerLiteral struct {
 type ReturnStatement struct {
 	Token       token.Token
 	ReturnValue Expression
+}
+
+type InfixExpression struct {
+	Left     Expression
+	Right    Expression
+	Token    token.Token
+	Operator string
 }
 
 type PrefixExpression struct {
@@ -125,6 +132,21 @@ func (ret *ReturnStatement) String() string {
 	return out.String()
 }
 func (ret *ReturnStatement) TokenLiteral() string { return ret.Token.Literal }
+
+// InfixExpression
+func (inf *InfixExpression) expression_node() {}
+func (inf *InfixExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(inf.Left.String())
+	out.WriteString(" " + inf.Operator + " ")
+	out.WriteString(inf.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}
+func (inf *InfixExpression) TokenLiteral() string { return inf.Token.Literal }
 
 // PrefixExpression
 func (pre *PrefixExpression) expression_node() {}
