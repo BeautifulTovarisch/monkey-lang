@@ -59,6 +59,12 @@ type IntegerLiteral struct {
 	Value int64
 }
 
+type CallExpression struct {
+	Token     token.Token
+	Function  Expression
+	Arguments []Expression
+}
+
 type FunctionLiteral struct {
 	Body       *BlockStatement
 	Token      token.Token
@@ -89,7 +95,7 @@ type ExpressionStatement struct {
 }
 
 /* Implement String() method for all nodes
- * Allows returning structure of program as a string for easy debugging
+ * Allows returning structure of program as arg string for easy debugging
  */
 func (prog *Program) String() string {
 	var out bytes.Buffer
@@ -175,6 +181,25 @@ func (bks *BlockStatement) TokenLiteral() string { return bks.Token.Literal }
 func (i_lit *IntegerLiteral) expression_node()     {}
 func (i_lit *IntegerLiteral) String() string       { return i_lit.Token.Literal }
 func (i_lit *IntegerLiteral) TokenLiteral() string { return i_lit.Token.Literal }
+
+// CallExpression
+func (cal *CallExpression) expression_node() {}
+func (cal *CallExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(cal.Function.String())
+	out.WriteString("(")
+
+	for _, arg := range cal.Arguments {
+		out.WriteString(arg.String())
+	}
+
+	out.WriteString(")")
+
+	return out.String()
+
+}
+func (cal *CallExpression) TokenLiteral() string { return cal.Token.Literal }
 
 // FunctionLiteral
 func (fl *FunctionLiteral) expression_node() {}

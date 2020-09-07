@@ -250,6 +250,39 @@ func (psr *Parser) parse_integer_literal() ast.Expression {
 	return lit
 }
 
+func (psr *Parser) parse_call_arguments() []ast.Expression {
+	args := []ast.Expression{}
+
+	if psr.peek_token_is(token.RPAREN) {
+		psr.next_token()
+		return args
+	}
+
+	psr.next_token()
+	args = append(args, psr.parse_expression(LOWEST))
+
+	for psr.peek_token_is(token.COMMA) {
+		psr.next_token()
+		psr.next_token()
+
+		args = append(args, psr.parse_expression(LOWEST))
+	}
+
+	if !psr.expect_peek(token.RPAREN) {
+		return nil
+	}
+
+	return args
+}
+
+func (psr *Parser) parse_call_expression(fn ast.Expression) ast.Expression {
+	return &ast.CallExpression{
+		Token:     psr.cur_token,
+		Function:  fn,
+		Arguments: psr.parse_call_arguments(),
+	}
+}
+
 func (psr *Parser) parse_function_parameters() []*ast.Identifier {
 	identifiers := []*ast.Identifier{}
 
@@ -408,6 +441,7 @@ func New(lex *lexer.Lexer) *Parser {
 	psr.register_infix(token.NE, psr.parse_infix_expression)
 	psr.register_infix(token.LT, psr.parse_infix_expression)
 	psr.register_infix(token.GT, psr.parse_infix_expression)
+	psr.register_infix(token.LPAREN, psr.parse_call_expression)
 
 	return psr
 }
