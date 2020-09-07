@@ -59,6 +59,12 @@ type IntegerLiteral struct {
 	Value int64
 }
 
+type FunctionLiteral struct {
+	Body       *BlockStatement
+	Token      token.Token
+	Parameters []*Identifier
+}
+
 type ReturnStatement struct {
 	Token       token.Token
 	ReturnValue Expression
@@ -83,7 +89,7 @@ type ExpressionStatement struct {
 }
 
 /* Implement String() method for all nodes
-* Allows returning structure of program as a string for easy debugging
+ * Allows returning structure of program as a string for easy debugging
  */
 func (prog *Program) String() string {
 	var out bytes.Buffer
@@ -152,7 +158,7 @@ func (let *LetStatement) String() string {
 }
 func (let *LetStatement) TokenLiteral() string { return let.Token.Literal }
 
-//BlockStatement
+// BlockStatement
 func (bks *BlockStatement) statement_node() {}
 func (bks *BlockStatement) String() string {
 	var out bytes.Buffer
@@ -169,6 +175,24 @@ func (bks *BlockStatement) TokenLiteral() string { return bks.Token.Literal }
 func (i_lit *IntegerLiteral) expression_node()     {}
 func (i_lit *IntegerLiteral) String() string       { return i_lit.Token.Literal }
 func (i_lit *IntegerLiteral) TokenLiteral() string { return i_lit.Token.Literal }
+
+// FunctionLiteral
+func (fl *FunctionLiteral) expression_node() {}
+func (fl *FunctionLiteral) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(fl.Token.Literal)
+	out.WriteString("(")
+
+	for _, param := range fl.Parameters {
+		out.WriteString(param.String())
+	}
+	out.WriteString(")")
+	out.WriteString(fl.Body.String())
+
+	return out.String()
+}
+func (fl *FunctionLiteral) TokenLiteral() string { return fl.Token.Literal }
 
 // ReturnStatement
 func (ret *ReturnStatement) statement_node() {}

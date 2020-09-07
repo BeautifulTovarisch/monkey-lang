@@ -250,6 +250,59 @@ func (psr *Parser) parse_integer_literal() ast.Expression {
 	return lit
 }
 
+func (psr *Parser) parse_function_parameters() []*ast.Identifier {
+	identifiers := []*ast.Identifier{}
+
+	// fn (...)
+	//        ^
+	// We've read all parameters, return
+	if psr.peek_token_is(token.RPAREN) {
+		psr.next_token()
+		return identifiers
+	}
+
+	psr.next_token()
+
+	ident := &ast.Identifier{Token: psr.cur_token, Value: psr.cur_token.Literal}
+	identifiers = append(identifiers, ident)
+
+	// fn (x, ...)
+	//      ^
+	// If the next token is a comma, advance twice
+	// read additional parameter
+	for psr.peek_token_is(token.COMMA) {
+		psr.next_token()
+		psr.next_token()
+
+		ident := &ast.Identifier{Token: psr.cur_token, Value: psr.cur_token.Literal}
+		identifiers = append(identifiers, ident)
+	}
+
+	if !psr.expect_peek(token.RPAREN) {
+		return nil
+	}
+
+	return identifiers
+}
+
+func (psr *Parser) parse_function_literal() ast.Expression {
+	fn := &ast.FunctionLiteral{Token: psr.cur_token}
+
+	if !psr.expect_peek(token.LPAREN) {
+		return nil
+	}
+
+	fn.Parameters = psr.parse_function_parameters()
+
+	if !psr.expect_peek(token.LBRACE) {
+		return nil
+	}
+
+	fn.Body = psr.parse_block_statement()
+
+	return fn
+}
+
 func (psr *Parser) parse_infix_expression(left ast.Expression) ast.Expression {
 	expression := &ast.InfixExpression{
 		Left:     left,
@@ -265,8 +318,8 @@ func (psr *Parser) parse_infix_expression(left ast.Expression) ast.Expression {
 }
 
 /* Parses prefix expressions (such as !5 or -15)
-* Current token either ! or -.
-* function advances token in order to capture expression.
+ * Current token either ! or -.
+ * function advances token in order to capture expression.
  */
 func (psr *Parser) parse_prefix_expression() ast.Expression {
 	expression := &ast.PrefixExpression{
@@ -339,16 +392,13 @@ func New(lex *lexer.Lexer) *Parser {
 
 	psr.register_prefix(token.IDENT, psr.parse_identifer)
 	psr.register_prefix(token.INT, psr.parse_integer_literal)
-
 	psr.register_prefix(token.TRUE, psr.parse_boolean)
 	psr.register_prefix(token.FALSE, psr.parse_boolean)
-
 	psr.register_prefix(token.BANG, psr.parse_prefix_expression)
 	psr.register_prefix(token.MINUS, psr.parse_prefix_expression)
-
 	psr.register_prefix(token.LPAREN, psr.parse_grouped_expression)
-
 	psr.register_prefix(token.IF, psr.parse_if_expression)
+	psr.register_prefix(token.FUNCTION, psr.parse_function_literal)
 
 	psr.register_infix(token.PLUS, psr.parse_infix_expression)
 	psr.register_infix(token.MINUS, psr.parse_infix_expression)
@@ -367,7 +417,7 @@ func (psr *Parser) Errors() []string {
 }
 
 /* Main parser functionality.
-*
+ * Kicks off various focused parsing functions.
  */
 func (psr *Parser) ParseProgram() *ast.Program {
 	program := &ast.Program{}

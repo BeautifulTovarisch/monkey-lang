@@ -8,6 +8,10 @@ import (
 	"monkey/lexer"
 )
 
+func unexpected_type(t *testing.T, expected string, actual interface{}) {
+	t.Fatalf("Unexpected type: %T for %s", actual, expected)
+}
+
 func test_let_statement(t *testing.T, stmt ast.Statement, name string) bool {
 	if stmt.TokenLiteral() != "let" {
 		t.Errorf("Incorrect Token. Expected 'let'. Got: %q.", stmt.TokenLiteral())
@@ -17,7 +21,7 @@ func test_let_statement(t *testing.T, stmt ast.Statement, name string) bool {
 	let_stmt, ok := stmt.(*ast.LetStatement)
 
 	if !ok {
-		t.Errorf("Invalid type for 'stmt'. Expected '*ast.LetStatement'. Got: %T", stmt)
+		unexpected_type(t, "LetStatement", stmt)
 		return false
 	}
 
@@ -53,7 +57,7 @@ func check_parser_errors(t *testing.T, psr *Parser) {
 func test_integer_literal(t *testing.T, i_lit ast.Expression, value int64) bool {
 	intgr, ok := i_lit.(*ast.IntegerLiteral)
 	if !ok {
-		t.Errorf("Unexpected type: %T for integer literal", i_lit)
+		unexpected_type(t, "IntegerLiteral", i_lit)
 		return false
 	}
 
@@ -133,7 +137,7 @@ return 993222;
 		ret_stmt, ok := stmt.(*ast.ReturnStatement)
 
 		if !ok {
-			t.Errorf("Unexpected type: %T", stmt)
+			unexpected_type(t, "ReturnStatement", stmt)
 		}
 
 		if ret_stmt.TokenLiteral() != "return" {
@@ -158,12 +162,12 @@ func TestBooleanExpression(t *testing.T) {
 
 	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 	if !ok {
-		t.Fatalf("Statement Unexpected type: %T", program.Statements[0])
+		unexpected_type(t, "ExpressionStatement", program.Statements[0])
 	}
 
 	ident, ok := stmt.Expression.(*ast.Boolean)
 	if !ok {
-		t.Fatalf("Expression Unexpected type: %T", stmt.Expression)
+		unexpected_type(t, "Boolean", stmt.Expression)
 	}
 
 	if ident.Value != true {
@@ -191,12 +195,12 @@ func TestIdentifierExpression(t *testing.T) {
 
 	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 	if !ok {
-		t.Fatalf("Statement Unexpected type: %T", program.Statements[0])
+		unexpected_type(t, "ExpressionStatement", program.Statements[0])
 	}
 
 	ident, ok := stmt.Expression.(*ast.Identifier)
 	if !ok {
-		t.Fatalf("Expression Unexpected type: %T", stmt.Expression)
+		unexpected_type(t, "Identifier", stmt.Expression)
 	}
 
 	if ident.Value != "foobar" {
@@ -401,5 +405,34 @@ func TestIfStatement(t *testing.T) {
 
 	if consequence == nil {
 		return
+	}
+}
+
+func TestFunctionLiteral(t *testing.T) {
+	input := `fn(x, y) { x + y; }`
+
+	lex := lexer.New(input)
+	psr := New(lex)
+
+	program := psr.ParseProgram()
+
+	check_parser_errors(t, psr)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("Wrong number of statements. Got: %d", len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		unexpected_type(t, "ExpressionStatement", program.Statements[0])
+	}
+
+	exp, ok := stmt.Expression.(*ast.FunctionLiteral)
+	if !ok {
+		unexpected_type(t, "FunctionLiteral", stmt.Expression)
+	}
+
+	if len(exp.Body.Statements) != 1 {
+		t.Errorf("Wrong number of Statements: %d", len(exp.Body.Statements))
 	}
 }
