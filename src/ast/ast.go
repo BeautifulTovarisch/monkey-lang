@@ -26,6 +26,11 @@ type Program struct {
 	Statements []Statement
 }
 
+type Boolean struct {
+	Token token.Token
+	Value bool
+}
+
 type Identifier struct {
 	Token token.Token
 	Value string
@@ -86,6 +91,11 @@ func (prog *Program) TokenLiteral() string {
 
 	return ""
 }
+
+// Boolean
+func (b *Boolean) expression_node()     {}
+func (b *Boolean) String() string       { return b.Token.Literal }
+func (b *Boolean) TokenLiteral() string { return b.Token.Literal }
 
 // Identifier
 func (id *Identifier) expression_node()     {}

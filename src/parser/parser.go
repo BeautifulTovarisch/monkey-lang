@@ -130,6 +130,10 @@ func (psr *Parser) parse_return_statement() *ast.ReturnStatement {
 	return stmt
 }
 
+func (psr *Parser) parse_boolean() ast.Expression {
+	return &ast.Boolean{Token: psr.cur_token, Value: psr.cur_token_is(token.TRUE)}
+}
+
 func (psr *Parser) parse_identifer() ast.Expression {
 	return &ast.Identifier{Token: psr.cur_token, Value: psr.cur_token.Literal}
 }
@@ -256,6 +260,9 @@ func New(lex *lexer.Lexer) *Parser {
 
 	psr.register_prefix(token.IDENT, psr.parse_identifer)
 	psr.register_prefix(token.INT, psr.parse_integer_literal)
+
+	psr.register_prefix(token.TRUE, psr.parse_boolean)
+	psr.register_prefix(token.FALSE, psr.parse_boolean)
 
 	psr.register_prefix(token.BANG, psr.parse_prefix_expression)
 	psr.register_prefix(token.MINUS, psr.parse_prefix_expression)

@@ -142,6 +142,39 @@ return 993222;
 	}
 }
 
+func TestBooleanExpression(t *testing.T) {
+	input := "true;"
+
+	lex := lexer.New(input)
+	psr := New(lex)
+
+	program := psr.ParseProgram()
+
+	check_parser_errors(t, psr)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("Wrong number of statements. Got: %d", len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Statement Unexpected type: %T", program.Statements[0])
+	}
+
+	ident, ok := stmt.Expression.(*ast.Boolean)
+	if !ok {
+		t.Fatalf("Expression Unexpected type: %T", stmt.Expression)
+	}
+
+	if ident.Value != true {
+		t.Errorf("Incorrect value. Expected: 'true'. Got: '%t'.", ident.Value)
+	}
+
+	if ident.TokenLiteral() != "true" {
+		t.Errorf("Incorrect token. Expected 'true'. Got: %s", ident.TokenLiteral())
+	}
+}
+
 func TestIdentifierExpression(t *testing.T) {
 	input := "foobar;"
 
@@ -296,6 +329,38 @@ func TestParsingInfixExpressions(t *testing.T) {
 
 		if !test_integer_literal(t, exp.Left, test.left_val) {
 			return
+		}
+	}
+}
+
+func TestOperatorPrecedence(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"!-a", "(!(-a))"},
+		{"a + b + c", "((a + b) + c)"},
+		{"a - b - c", "((a - b) - c)"},
+		{"a + b * c", "(a + (b * c))"},
+		{"a * b / c", "((a * b) / c)"},
+		{"a + b / c", "(a + (b / c))"},
+		{"3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"},
+		{"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
+		{"5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"},
+	}
+
+	for _, test := range tests {
+		lex := lexer.New(test.input)
+		psr := New(lex)
+
+		program := psr.ParseProgram()
+
+		check_parser_errors(t, psr)
+
+		actual := program.String()
+
+		if actual != test.expected {
+			t.Errorf("Unexpected output. Expected %q. Got %q", test.expected, actual)
 		}
 	}
 }
