@@ -345,6 +345,7 @@ func TestOperatorPrecedence(t *testing.T) {
 		{"a * b / c", "((a * b) / c)"},
 		{"a + b / c", "(a + (b / c))"},
 		{"3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"},
+		{"1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"},
 		{"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
 		{"5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"},
 	}
@@ -362,5 +363,43 @@ func TestOperatorPrecedence(t *testing.T) {
 		if actual != test.expected {
 			t.Errorf("Unexpected output. Expected %q. Got %q", test.expected, actual)
 		}
+	}
+}
+
+func TestIfStatement(t *testing.T) {
+	input := `if (x < y) { x }`
+
+	lex := lexer.New(input)
+	psr := New(lex)
+
+	program := psr.ParseProgram()
+
+	check_parser_errors(t, psr)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("Wrong number of statements. Got: %d", len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Unexpected type: %T for ExpressionStatement", program.Statements[0])
+	}
+
+	exp, ok := stmt.Expression.(*ast.IfExpression)
+	if !ok {
+		t.Fatalf("Unexpected type: %T for IfExpression", stmt.Expression)
+	}
+
+	if len(exp.Consequence.Statements) != 1 {
+		t.Errorf("Wrong number of Statements: %d", len(exp.Consequence.Statements))
+	}
+
+	consequence, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Errorf("Unexpected type: %T for ExpressionStatement", exp.Consequence.Statements[0])
+	}
+
+	if consequence == nil {
+		return
 	}
 }

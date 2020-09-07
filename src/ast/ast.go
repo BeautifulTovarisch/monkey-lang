@@ -36,6 +36,18 @@ type Identifier struct {
 	Value string
 }
 
+type BlockStatement struct {
+	Token      token.Token
+	Statements []Statement
+}
+
+type IfExpression struct {
+	Token       token.Token
+	Condition   Expression
+	Alternative *BlockStatement
+	Consequence *BlockStatement
+}
+
 type LetStatement struct {
 	Name  *Identifier
 	Token token.Token
@@ -97,6 +109,25 @@ func (b *Boolean) expression_node()     {}
 func (b *Boolean) String() string       { return b.Token.Literal }
 func (b *Boolean) TokenLiteral() string { return b.Token.Literal }
 
+// IfExpression
+func (ife *IfExpression) expression_node() {}
+func (ife *IfExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("if")
+	out.WriteString(ife.Condition.String())
+	out.WriteString(" ")
+	out.WriteString(ife.Consequence.String())
+
+	if ife.Alternative != nil {
+		out.WriteString("else ")
+		out.WriteString(ife.Alternative.String())
+	}
+
+	return out.String()
+}
+func (ife *IfExpression) TokenLiteral() string { return ife.Token.Literal }
+
 // Identifier
 func (id *Identifier) expression_node()     {}
 func (id *Identifier) String() string       { return id.Value }
@@ -120,6 +151,19 @@ func (let *LetStatement) String() string {
 	return out.String()
 }
 func (let *LetStatement) TokenLiteral() string { return let.Token.Literal }
+
+//BlockStatement
+func (bks *BlockStatement) statement_node() {}
+func (bks *BlockStatement) String() string {
+	var out bytes.Buffer
+
+	for _, stmt := range bks.Statements {
+		out.WriteString(stmt.String())
+	}
+
+	return out.String()
+}
+func (bks *BlockStatement) TokenLiteral() string { return bks.Token.Literal }
 
 // IntegerLiteral
 func (i_lit *IntegerLiteral) expression_node()     {}

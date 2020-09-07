@@ -96,9 +96,76 @@ func (psr *Parser) expect_peek(tok token.TokenType) bool {
 	return false
 }
 
+func (psr *Parser) parse_block_statement() *ast.BlockStatement {
+	block := &ast.BlockStatement{
+		Token:      psr.cur_token,
+		Statements: []ast.Statement{},
+	}
+
+	psr.next_token()
+
+	// if () {
+	// ...
+	// }
+	// ^
+	// Collect statements until reaching '}' or end of file (EOF)
+	for !psr.cur_token_is(token.RBRACE) && !psr.cur_token_is(token.EOF) {
+		stmt := psr.parse_statement()
+		if stmt != nil {
+			block.Statements = append(block.Statements, stmt)
+		}
+
+		psr.next_token()
+	}
+
+	return block
+}
+
+func (psr *Parser) parse_if_expression() ast.Expression {
+	expression := &ast.IfExpression{Token: psr.cur_token}
+
+	// if (
+	//    ^
+	if !psr.expect_peek(token.LPAREN) {
+		return nil
+	}
+
+	psr.next_token()
+	expression.Condition = psr.parse_expression(LOWEST)
+
+	// if () {
+	//     ^
+	if !psr.expect_peek(token.RPAREN) {
+		return nil
+	}
+
+	// if () {
+	//       ^
+	if !psr.expect_peek(token.LBRACE) {
+		return nil
+	}
+
+	expression.Consequence = psr.parse_block_statement()
+
+	if psr.peek_token_is(token.ELSE) {
+		psr.next_token()
+
+		// else {
+		//      ^
+		if !psr.expect_peek(token.LBRACE) {
+			return nil
+		}
+
+		expression.Alternative = psr.parse_block_statement()
+	}
+
+	return expression
+}
+
 func (psr *Parser) parse_let_statement() *ast.LetStatement {
 	stmt := &ast.LetStatement{Token: psr.cur_token}
 
+	// If next token isn't an identifier
 	if !psr.expect_peek(token.IDENT) {
 		return nil
 	}
@@ -109,7 +176,7 @@ func (psr *Parser) parse_let_statement() *ast.LetStatement {
 		return nil
 	}
 
-	// TODO :: Implement expressions
+	// Read tokens until semicolon
 	for !psr.cur_token_is(token.SEMICOLON) {
 		psr.next_token()
 	}
@@ -122,7 +189,7 @@ func (psr *Parser) parse_return_statement() *ast.ReturnStatement {
 
 	psr.next_token()
 
-	// TODO :: Implement expressions
+	// Read tokens until semicolon
 	for !psr.cur_token_is(token.SEMICOLON) {
 		psr.next_token()
 	}
@@ -214,6 +281,18 @@ func (psr *Parser) parse_prefix_expression() ast.Expression {
 	return expression
 }
 
+func (psr *Parser) parse_grouped_expression() ast.Expression {
+	psr.next_token()
+
+	expr := psr.parse_expression(LOWEST)
+
+	if !psr.expect_peek(token.RPAREN) {
+		return nil
+	}
+
+	return expr
+}
+
 func (psr *Parser) parse_expression_statement() *ast.ExpressionStatement {
 	stmt := &ast.ExpressionStatement{
 		Token:      psr.cur_token,
@@ -266,6 +345,10 @@ func New(lex *lexer.Lexer) *Parser {
 
 	psr.register_prefix(token.BANG, psr.parse_prefix_expression)
 	psr.register_prefix(token.MINUS, psr.parse_prefix_expression)
+
+	psr.register_prefix(token.LPAREN, psr.parse_grouped_expression)
+
+	psr.register_prefix(token.IF, psr.parse_if_expression)
 
 	psr.register_infix(token.PLUS, psr.parse_infix_expression)
 	psr.register_infix(token.MINUS, psr.parse_infix_expression)
