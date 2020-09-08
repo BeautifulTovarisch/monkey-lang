@@ -8,20 +8,20 @@ import (
 
 func TestNextToken(t *testing.T) {
 	input := `let five = 5;
-let ten = 10;
-let add = fn(x, y) {x + y;};
-let result = add(five, ten);
-!-/*5;
-5 < 10 > 5;
+	let ten = 10;
+	let add = fn(x, y) {x + y;};
+	let result = add(five, ten);
+	!-/*5;
+	5 < 10 > 5;
 
-if (5 < 10) {
-  return true;
-} else {
-  return false;
-}
+	if (5 < 10) {
+	  return true;
+	} else {
+	  return false;
+	}
 
-10 == 10;
-10 != 9;`
+	10 == 10;
+	10 != 9;`
 
 	expected := []struct {
 		expectedType    token.TokenType
@@ -103,10 +103,14 @@ if (5 < 10) {
 		{token.EOF, ""},
 	}
 
-	lex := New(input)
+	tokens := Tokenize(input)
+
+	if len(tokens) != len(expected) {
+		t.Fatalf("Wrong number of tokens. Expected: %d, Got: %d", len(expected), len(tokens))
+	}
 
 	for index, tok := range expected {
-		token := lex.NextToken()
+		token := tokens[index]
 
 		if token.Type != tok.expectedType {
 			t.Fatalf("expected[%d] - Wrong token. Expected: %q, Got: %q",

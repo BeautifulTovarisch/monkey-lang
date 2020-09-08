@@ -37,19 +37,18 @@ type Token struct {
 	Literal string
 }
 
-// TODO :: Consider moving this inside LookupIdent
-var keywords = map[string]TokenType{
-	"fn":     FUNCTION,
-	"if":     IF,
-	"let":    LET,
-	"else":   ELSE,
-	"true":   TRUE,
-	"false":  FALSE,
-	"return": RETURN,
-}
-
 // If token is a reserved word return it, otherwise consider it an identifier
 func LookupIdent(ident string) TokenType {
+	keywords := map[string]TokenType{
+		"fn":     FUNCTION,
+		"if":     IF,
+		"let":    LET,
+		"else":   ELSE,
+		"true":   TRUE,
+		"false":  FALSE,
+		"return": RETURN,
+	}
+
 	if tok, ok := keywords[ident]; ok {
 		return tok
 	}

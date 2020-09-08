@@ -1,6 +1,8 @@
 package lexer
 
 import (
+	"fmt"
+
 	"monkey/token"
 )
 
@@ -22,130 +24,163 @@ func is_digit(ch byte) bool {
 // Test if ascii letter
 // TODO :: Allow unicode in identifiers
 func is_letter(ch byte) bool {
-	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
-}
-
-// Read character from input. Null(0) character indicates EOF
-func (lex *Lexer) read_char() {
-	if lex.read_position >= len(lex.input) {
-		lex.ch = 0
-	} else {
-		lex.ch = lex.input[lex.read_position]
+	switch true {
+	case ch == '_':
+		fallthrough
+	case 'a' <= ch && ch <= 'z':
+		fallthrough
+	case 'A' <= ch && ch <= 'Z':
+		return true
 	}
 
-	lex.position = lex.read_position
-	lex.read_position += 1
+	return false
 }
 
-// Peek ahead without incrementing stream
-func (lex *Lexer) peek_char() byte {
-	if lex.read_position >= len(lex.input) {
+func read_char(pos int, input string) byte {
+	if pos >= len(input) {
 		return 0
 	}
 
-	return lex.input[lex.read_position]
+	return input[pos]
 }
 
-func (lex *Lexer) read_number() string {
-	position := lex.position
-
-	for is_digit(lex.ch) {
-		lex.read_char()
+/* TODO :: Consider combining the following two functions
+ * Accept a termination function, proceed as normal
+ * read_until(func(), count int, input string) string {}
+ */
+func read_number(count int, input string) (int, string) {
+	// Recurse until not a digit, 1 is base case in order to handle single digits
+	if !is_digit(input[0]) {
+		return 0, ""
 	}
 
-	return lex.input[position:lex.position]
+	advance, next := read_number(count+1, input[1:])
+
+	return advance + 1, string(input[0]) + next
 }
 
-func (lex *Lexer) read_identifier() string {
-	position := lex.position
-
-	// Read characters of identifier
-	for is_letter(lex.ch) {
-		lex.read_char()
+func read_identifier(count int, input string) (int, string) {
+	// Stop when no longer reading letters
+	// Base case of count avoids double counting whitespace
+	if len(input) == 0 || !is_letter(input[0]) {
+		return 0, ""
 	}
+
+	advance, next := read_identifier(count+1, input[1:])
 
 	// Return slice containing identifier string
-	return lex.input[position:lex.position]
+	return advance + 1, string(input[0]) + next
 }
 
-// Advance lexer character if whitespace detected
-func (lex *Lexer) skip_whitespace() {
-	for lex.ch == ' ' || lex.ch == '\t' || lex.ch == '\n' || lex.ch == '\r' {
-		lex.read_char()
+// Returns first non whitespace character after initial index
+func skip_whitespace(pos int, input string) (int, byte) {
+	whitespace := []byte{' ', '\t', '\n', '\r'}
+
+	for _, char := range whitespace {
+		if input[0] == char {
+			return skip_whitespace(pos+1, input[1:])
+		}
 	}
+
+	return pos, input[0]
 }
 
-// Exports
+/* Scans various inputs/section of a program string.
+ * Returns token.Token for parsing at a later step.
+ * Additionally returns number of tokens advanced.
+ */
+func next_token(input string) (token.Token, int) {
+	read_chars := 1
 
-func New(input string) *Lexer {
-	lex := &Lexer{input: input}
-	lex.read_char()
-
-	return lex
-}
-
-func (lex *Lexer) NextToken() token.Token {
 	var tok token.Token
 
-	lex.skip_whitespace()
+	// Get position and value of first non whitespace character
+	// Position here also equal to number of whitespace chars skipped
+	ws, ch := skip_whitespace(0, input)
 
-	switch lex.ch {
+	switch ch {
 	case 0:
 		tok = token.Token{Type: token.EOF, Literal: ""}
 	case '=':
 		// if another '=' found, advance one char and assign '=='
-		if lex.peek_char() == '=' {
-			lex.read_char()
+		if read_char(ws+1, input) == '=' {
 			tok = token.Token{Type: token.EQ, Literal: "=="}
+			read_chars += 1
 		} else {
-			tok = new_token(token.ASSIGN, lex.ch)
+			tok = new_token(token.ASSIGN, ch)
 		}
 	case ';':
-		tok = new_token(token.SEMICOLON, lex.ch)
+		tok = new_token(token.SEMICOLON, ch)
 	case '(':
-		tok = new_token(token.LPAREN, lex.ch)
+		tok = new_token(token.LPAREN, ch)
 	case ')':
-		tok = new_token(token.RPAREN, lex.ch)
+		tok = new_token(token.RPAREN, ch)
 	case ',':
-		tok = new_token(token.COMMA, lex.ch)
+		tok = new_token(token.COMMA, ch)
 	case '+':
-		tok = new_token(token.PLUS, lex.ch)
+		tok = new_token(token.PLUS, ch)
 	case '{':
-		tok = new_token(token.LBRACE, lex.ch)
+		tok = new_token(token.LBRACE, ch)
 	case '}':
-		tok = new_token(token.RBRACE, lex.ch)
+		tok = new_token(token.RBRACE, ch)
 	case '-':
-		tok = new_token(token.MINUS, lex.ch)
+		tok = new_token(token.MINUS, ch)
 	case '!':
-		if lex.peek_char() == '=' {
-			lex.read_char()
+		if read_char(ws+1, input) == '=' {
 			tok = token.Token{Type: token.NE, Literal: "!="}
+			read_chars += 1
 		} else {
-			tok = new_token(token.BANG, lex.ch)
+			tok = new_token(token.BANG, ch)
 		}
 	case '/':
-		tok = new_token(token.SLASH, lex.ch)
+		tok = new_token(token.SLASH, ch)
 	case '*':
-		tok = new_token(token.ASTERISK, lex.ch)
+		tok = new_token(token.ASTERISK, ch)
 	case '<':
-		tok = new_token(token.LT, lex.ch)
+		tok = new_token(token.LT, ch)
 	case '>':
-		tok = new_token(token.GT, lex.ch)
+		tok = new_token(token.GT, ch)
 	default:
-		if is_letter(lex.ch) {
-			literal := lex.read_identifier()
+		if is_letter(ch) {
+			advance_by, literal := read_identifier(0, input[ws:])
+			tok = token.Token{Type: token.LookupIdent(literal), Literal: literal}
 
-			// Early exit prevents read_char from advancing
-			return token.Token{Type: token.LookupIdent(literal), Literal: literal}
-		} else if is_digit(lex.ch) {
-			tok = token.Token{Type: token.INT, Literal: lex.read_number()}
-			return tok
+			read_chars = advance_by
+
+		} else if is_digit(ch) {
+			advance_by, num := read_number(0, input[ws:])
+			tok = token.Token{Type: token.INT, Literal: num}
+
+			read_chars = advance_by
 		} else {
-			tok = new_token(token.ILLEGAL, lex.ch)
+			tok = new_token(token.ILLEGAL, ch)
 		}
 	}
 
-	lex.read_char()
+	// Defaults to one character advancement
+	return tok, ws + read_chars
+}
 
-	return tok
+// Exports
+
+func Tokenize(input string) []token.Token {
+	var recurse func(input string) []token.Token
+
+	// Walk the input, building up array of tokens
+	recurse = func(input string) []token.Token {
+
+		if len(input) == 0 {
+			return []token.Token{}
+		}
+
+		// Append token to tokens, 'advance' by number of chars
+		// processed in lexing the token
+		// e.g 'let' -> 3 tokens
+		tok, advance := next_token(input)
+
+		fmt.Printf("Token: %s\n", tok.Literal)
+		return append(recurse(input[advance:]), tok)
+	}
+
+	return recurse(input)
 }
