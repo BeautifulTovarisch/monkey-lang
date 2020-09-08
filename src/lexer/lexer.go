@@ -173,7 +173,6 @@ func Tokenize(input string) []token.Token {
 
 		token_list := recurse(input[advance:])
 
-		// fmt.Printf("Token: %s\n", tok.Literal)
 		return append([]token.Token{tok}, token_list...)
 	}
 
