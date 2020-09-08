@@ -8,20 +8,20 @@ import (
 
 func TestNextToken(t *testing.T) {
 	input := `let five = 5;
-let ten = 10;
-let add = fn(x, y) {x + y;};
-let result = add(five, ten);
-!-/*5;
-5 < 10 > 5;
+	let ten = 10;
+	let add = fn(x, y) {x + y;};
+	let result = add(five, ten);
+	!-/*5;
+	5 < 10 > 5;
 
-if (5 < 10) {
-  return true;
-} else {
-  return false;
-}
+	if (5 < 10) {
+	  return true;
+	} else {
+	  return false;
+	}
 
-10 == 10;
-10 != 9;`
+	10 == 10;
+	10 != 9;`
 
 	expected := []struct {
 		expectedType    token.TokenType
@@ -103,19 +103,23 @@ if (5 < 10) {
 		{token.EOF, ""},
 	}
 
-	lex := New(input)
+	tokens := Tokenize(input)
 
-	for index, tok := range expected {
-		token := lex.NextToken()
+	if len(tokens) != len(expected) {
+		t.Fatalf("Wrong number of tokens. Expected: %d, Got: %d", len(expected), len(tokens))
+	}
 
-		if token.Type != tok.expectedType {
-			t.Fatalf("expected[%d] - Wrong token. Expected: %q, Got: %q",
-				index, tok.expectedType, token.Type)
+	for index, tok := range tokens {
+		token := expected[index]
+
+		if tok.Type != token.expectedType {
+			t.Fatalf("tok[%d] - Wrong type. Expected: %q, Got: %q",
+				index, token.expectedType, tok.Type)
 		}
 
-		if token.Literal != tok.expectedLiteral {
-			t.Fatalf("expected[%d] - Wrong literal. Expected: %q, Got: %q",
-				index, tok.expectedLiteral, token.Literal)
+		if tok.Literal != token.expectedLiteral {
+			t.Fatalf("tok[%d] - Wrong literal. Expected: %q, Got: %q",
+				index, token.expectedLiteral, tok.Literal)
 		}
 	}
 }
