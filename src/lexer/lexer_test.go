@@ -109,17 +109,17 @@ func TestNextToken(t *testing.T) {
 		t.Fatalf("Wrong number of tokens. Expected: %d, Got: %d", len(expected), len(tokens))
 	}
 
-	for index, tok := range expected {
-		token := tokens[index]
+	for index, tok := range tokens {
+		token := expected[index]
 
-		if token.Type != tok.expectedType {
-			t.Fatalf("expected[%d] - Wrong token. Expected: %q, Got: %q",
-				index, tok.expectedType, token.Type)
+		if tok.Type != token.expectedType {
+			t.Fatalf("tok[%d] - Wrong type. Expected: %q, Got: %q",
+				index, token.expectedType, tok.Type)
 		}
 
-		if token.Literal != tok.expectedLiteral {
-			t.Fatalf("expected[%d] - Wrong literal. Expected: %q, Got: %q",
-				index, tok.expectedLiteral, token.Literal)
+		if tok.Literal != token.expectedLiteral {
+			t.Fatalf("tok[%d] - Wrong literal. Expected: %q, Got: %q",
+				index, token.expectedLiteral, tok.Literal)
 		}
 	}
 }

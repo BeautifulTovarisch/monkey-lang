@@ -1,24 +1,15 @@
 package lexer
 
 import (
-	"fmt"
-
 	"monkey/token"
 )
 
-type Lexer struct {
-	ch            byte
-	input         string
-	position      int
-	read_position int
+func is_digit(ch byte) bool {
+	return '0' <= ch && ch <= '9'
 }
 
 func new_token(token_type token.TokenType, ch byte) token.Token {
 	return token.Token{Type: token_type, Literal: string(ch)}
-}
-
-func is_digit(ch byte) bool {
-	return '0' <= ch && ch <= '9'
 }
 
 // Test if ascii letter
@@ -74,12 +65,16 @@ func read_identifier(count int, input string) (int, string) {
 
 // Returns first non whitespace character after initial index
 func skip_whitespace(pos int, input string) (int, byte) {
-	whitespace := []byte{' ', '\t', '\n', '\r'}
+	whitespace := map[byte]bool{
+		' ':  true,
+		'\n': true,
+		'\t': true,
+		'\r': true,
+	}
 
-	for _, char := range whitespace {
-		if input[0] == char {
-			return skip_whitespace(pos+1, input[1:])
-		}
+	_, ok := whitespace[input[0]]
+	if ok {
+		return skip_whitespace(pos+1, input[1:])
 	}
 
 	return pos, input[0]
@@ -99,8 +94,6 @@ func next_token(input string) (token.Token, int) {
 	ws, ch := skip_whitespace(0, input)
 
 	switch ch {
-	case 0:
-		tok = token.Token{Type: token.EOF, Literal: ""}
 	case '=':
 		// if another '=' found, advance one char and assign '=='
 		if read_char(ws+1, input) == '=' {
@@ -170,7 +163,7 @@ func Tokenize(input string) []token.Token {
 	recurse = func(input string) []token.Token {
 
 		if len(input) == 0 {
-			return []token.Token{}
+			return []token.Token{{Type: token.EOF, Literal: ""}}
 		}
 
 		// Append token to tokens, 'advance' by number of chars
@@ -178,8 +171,10 @@ func Tokenize(input string) []token.Token {
 		// e.g 'let' -> 3 tokens
 		tok, advance := next_token(input)
 
-		fmt.Printf("Token: %s\n", tok.Literal)
-		return append(recurse(input[advance:]), tok)
+		token_list := recurse(input[advance:])
+
+		// fmt.Printf("Token: %s\n", tok.Literal)
+		return append([]token.Token{tok}, token_list...)
 	}
 
 	return recurse(input)
