@@ -41,7 +41,7 @@ func read_char(pos int, input string) byte {
  */
 func read_number(count int, input string) (int, string) {
 	// Recurse until not a digit, 1 is base case in order to handle single digits
-	if !is_digit(input[0]) {
+	if len(input) == 0 || !is_digit(input[0]) {
 		return 0, ""
 	}
 
@@ -52,7 +52,6 @@ func read_number(count int, input string) (int, string) {
 
 func read_identifier(count int, input string) (int, string) {
 	// Stop when no longer reading letters
-	// Base case of count avoids double counting whitespace
 	if len(input) == 0 || !is_letter(input[0]) {
 		return 0, ""
 	}
@@ -70,6 +69,10 @@ func skip_whitespace(pos int, input string) (int, byte) {
 		'\n': true,
 		'\t': true,
 		'\r': true,
+	}
+
+	if len(input) == 0 {
+		return 0, 0
 	}
 
 	_, ok := whitespace[input[0]]
@@ -94,6 +97,8 @@ func next_token(input string) (token.Token, int) {
 	ws, ch := skip_whitespace(0, input)
 
 	switch ch {
+	case 0:
+		tok = token.Token{Type: token.EOF, Literal: ""}
 	case '=':
 		// if another '=' found, advance one char and assign '=='
 		if read_char(ws+1, input) == '=' {
