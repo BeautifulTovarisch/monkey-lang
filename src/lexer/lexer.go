@@ -75,8 +75,7 @@ func skip_whitespace(pos int, input string) (int, byte) {
 		return 0, 0
 	}
 
-	_, ok := whitespace[input[0]]
-	if ok {
+	if _, ok := whitespace[input[0]]; ok {
 		return skip_whitespace(pos+1, input[1:])
 	}
 
@@ -87,7 +86,7 @@ func skip_whitespace(pos int, input string) (int, byte) {
  * Returns token.Token for parsing at a later step.
  * Additionally returns number of tokens advanced.
  */
-func next_token(input string) (token.Token, int) {
+func next_token(input string) (token.Token, string) {
 	read_chars := 1
 
 	var tok token.Token
@@ -156,30 +155,22 @@ func next_token(input string) (token.Token, int) {
 	}
 
 	// Defaults to one character advancement
-	return tok, ws + read_chars
+	return tok, input[(ws + read_chars):]
 }
 
 // Exports
 
 func Tokenize(input string) []token.Token {
-	var recurse func(input string) []token.Token
 
-	// Walk the input, building up array of tokens
-	recurse = func(input string) []token.Token {
+	tok, rest := next_token(input)
 
-		if len(input) == 0 {
-			return []token.Token{{Type: token.EOF, Literal: ""}}
+	if len(rest) == 0 {
+		if tok.Type == token.EOF {
+			return []token.Token{tok}
+		} else {
+			return []token.Token{tok, {Type: token.EOF, Literal: ""}}
 		}
-
-		// Append token to tokens, 'advance' by number of chars
-		// processed in lexing the token
-		// e.g 'let' -> 3 tokens
-		tok, advance := next_token(input)
-
-		token_list := recurse(input[advance:])
-
-		return append([]token.Token{tok}, token_list...)
 	}
 
-	return recurse(input)
+	return append([]token.Token{tok}, Tokenize(rest)...)
 }
