@@ -123,38 +123,34 @@ return 993222;
 	}
 }
 
-// func TestBooleanExpression(t *testing.T) {
-// 	input := "true;"
+func TestBooleanExpression(t *testing.T) {
 
-// 	lex := lexer.New(input)
-// 	psr := New(lex)
+	tokens := lexer.Tokenize("true;")
 
-// 	program := psr.ParseProgram()
+	statements := ParseProgram(tokens)
 
-// 	check_parser_errors(t, psr)
+	if len(statements) != 1 {
+		t.Fatalf("Wrong number of statements. Got: %d", len(statements))
+	}
 
-// 	if len(statements) != 1 {
-// 		t.Fatalf("Wrong number of statements. Got: %d", len(statements))
-// 	}
+	stmt, ok := statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		type_error(t, "ExpressionStatement", statements[0])
+	}
 
-// 	stmt, ok := statements[0].(*ast.ExpressionStatement)
-// 	if !ok {
-// 		type_error(t, "ExpressionStatement", statements[0])
-// 	}
+	ident, ok := stmt.Expression.(*ast.Boolean)
+	if !ok {
+		type_error(t, "Boolean", stmt.Expression)
+	}
 
-// 	ident, ok := stmt.Expression.(*ast.Boolean)
-// 	if !ok {
-// 		type_error(t, "Boolean", stmt.Expression)
-// 	}
+	if ident.Value != true {
+		t.Errorf("Incorrect value. Expected: 'true'. Got: '%t'.", ident.Value)
+	}
 
-// 	if ident.Value != true {
-// 		t.Errorf("Incorrect value. Expected: 'true'. Got: '%t'.", ident.Value)
-// 	}
-
-// 	if ident.TokenLiteral() != "true" {
-// 		t.Errorf("Incorrect token. Expected 'true'. Got: %s", ident.TokenLiteral())
-// 	}
-// }
+	if ident.TokenLiteral() != "true" {
+		t.Errorf("Incorrect token. Expected 'true'. Got: %s", ident.TokenLiteral())
+	}
+}
 
 // func TestIdentifierExpression(t *testing.T) {
 // 	input := "foobar;"

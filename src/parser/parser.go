@@ -77,6 +77,12 @@ func parse_prefix(tok token.Token, tokens []token.Token) (ast.Expression, []toke
 	switch tok.Type {
 	case token.INT:
 		return parse_integer_literal(tok), tokens
+	// Boolean
+	case token.TRUE:
+		fallthrough
+	case token.FALSE:
+		return parse_boolean(tok), tokens[1:]
+	// Prefix expression
 	case token.BANG:
 		fallthrough
 	case token.MINUS:
@@ -205,9 +211,9 @@ func parse_return_statement(ret token.Token, tokens []token.Token) (*ast.ReturnS
 	return &ast.ReturnStatement{Token: ret}, remaining[1:]
 }
 
-// func (psr *Parser) parse_boolean() ast.Expression {
-// 	return &ast.Boolean{Token: psr.cur_token, Value: psr.cur_token_is(token.TRUE)}
-// }
+func parse_boolean(tok token.Token) ast.Expression {
+	return &ast.Boolean{Token: tok, Value: tok.Type == token.TRUE}
+}
 
 func parse_identifier(tok token.Token) ast.Expression {
 	return &ast.Identifier{Token: tok, Value: tok.Literal}
@@ -368,32 +374,7 @@ func parse_statement(tokens []token.Token) (ast.Statement, []token.Token) {
 	}
 }
 
-// func (psr *Parser) register_infix(token_type token.TokenType, fn infix_parse_fn) {
-// 	psr.infix_parse_fns[token_type] = fn
-// }
-
-// func (psr *Parser) register_prefix(token_type token.TokenType, fn prefix_parse_fn) {
-// 	psr.prefix_parse_fns[token_type] = fn
-// }
-
 // Exported
-
-// func New(lex *lexer.Lexer) *Parser {
-// 	psr := &Parser{lex: lex, errors: []string{}}
-
-// 	psr.next_token()
-// 	psr.next_token()
-
-// 	// Associate parsing functions
-// 	psr.infix_parse_fns = make(map[token.TokenType]infix_parse_fn)
-// 	psr.prefix_parse_fns = make(map[token.TokenType]prefix_parse_fn)
-
-// 	return psr
-// }
-
-// func (psr *Parser) Errors() []string {
-// 	return psr.errors
-// }
 
 /* Main parser functionality.
  * Kicks off various focused parsing functions.
@@ -402,7 +383,7 @@ func ParseProgram(tokens []token.Token) []ast.Statement {
 
 	stmt, rest := parse_statement(tokens)
 
-	fmt.Println(rest)
+	fmt.Println(stmt)
 
 	if len(rest) == 0 {
 		return []ast.Statement{}
