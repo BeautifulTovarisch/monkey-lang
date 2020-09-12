@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	// "strconv"
 
 	"monkey/ast"
@@ -453,19 +454,26 @@ func parse_expression_statement(tok token.Token, tokens []token.Token) (*ast.Exp
 	}, tokens_consumed + consumed
 }
 
-func parse_statement(tokens []token.Token) (ast.Statement, int) {
+func parse_statement(tokens []token.Token) (ast.Statement, []token.Token) {
 	first, rest := next_token(tokens)
 
+	var stmt ast.Statement
+	var consumed int
+
+	fmt.Println(first.Type)
+
 	switch first.Type {
+	case token.EOF:
+		return nil, nil
 	case token.LET:
-		return parse_let_statement(first, rest)
+		stmt, consumed = parse_let_statement(first, rest)
 	case token.RETURN:
-		return parse_return_statement(first, rest)
-		// default:
-		// 	return parse_expression_statement(first, rest)
+		stmt, consumed = parse_return_statement(first, rest)
+	default:
+		stmt, consumed = parse_expression_statement(first, rest)
 	}
 
-	return nil, 0
+	return stmt, tokens[consumed:]
 }
 
 // func (psr *Parser) register_infix(token_type token.TokenType, fn infix_parse_fn) {
@@ -519,23 +527,12 @@ func parse_statement(tokens []token.Token) (ast.Statement, int) {
  * Kicks off various focused parsing functions.
  */
 func ParseProgram(tokens []token.Token) []ast.Statement {
-	var recurse func(tokens []token.Token) []ast.Statement
 
-	recurse = func(tokens []token.Token) []ast.Statement {
-		if len(tokens) == 0 {
-			return []ast.Statement{}
-		}
+	stmt, rest := parse_statement(tokens)
 
-		stmt, tokens_consumed := parse_statement(tokens)
-
-		if tokens_consumed == 0 {
-			return nil
-		}
-
-		statements := recurse(tokens[tokens_consumed:])
-
-		return append([]ast.Statement{stmt}, statements...)
+	if len(rest) == 0 {
+		return []ast.Statement{}
 	}
 
-	return recurse(tokens)
+	return append([]ast.Statement{stmt}, ParseProgram(rest)...)
 }

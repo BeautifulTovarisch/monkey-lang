@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"testing"
 
 	"monkey/ast"
@@ -104,6 +105,8 @@ return 993222;
 `
 
 	statements := ParseProgram(lexer.Tokenize(input))
+
+	fmt.Println(statements)
 
 	if len(statements) != 3 {
 		statement_error(t, 3, len(statements))
