@@ -69,12 +69,6 @@ func TestLetStatements(t *testing.T) {
 	let y = 10;
 	let foobar = 838383;`
 
-	tokens := lexer.Tokenize(input)
-
-	for _, tok := range tokens {
-		t.Errorf("%v\n", tok)
-	}
-
 	statements := ParseProgram(lexer.Tokenize(input))
 
 	// check_parser_errors(t, syntax_tree)
@@ -108,11 +102,6 @@ return 5;
 return 10;
 return 993222;
 `
-	tokens := lexer.Tokenize(input)
-
-	for _, tok := range tokens {
-		t.Errorf("%v\n", tok)
-	}
 
 	statements := ParseProgram(lexer.Tokenize(input))
 

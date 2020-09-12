@@ -165,6 +165,7 @@ func Tokenize(input string) []token.Token {
 	tok, rest := next_token(input)
 
 	if len(rest) == 0 {
+		// Check here for cases in which whitespace is last character
 		if tok.Type == token.EOF {
 			return []token.Token{tok}
 		} else {

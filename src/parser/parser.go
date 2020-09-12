@@ -1,7 +1,6 @@
 package parser
 
 import (
-	// "fmt"
 	// "strconv"
 
 	"monkey/ast"
@@ -413,7 +412,6 @@ func parse_expression(tok token.Token, tokens []token.Token, precedence int) (as
 
 	if prefix == nil {
 		// TODO :: Write logger/error handler to provide feedback to user
-		fmt.Printf("No prefix fn registered for token: %v\n", tok)
 		return nil, -1
 	}
 
