@@ -42,25 +42,25 @@ func test_let_statement(t *testing.T, stmt ast.Statement, name string) bool {
 	return true
 }
 
-// func test_integer_literal(t *testing.T, i_lit ast.Expression, value int64) bool {
-// 	intgr, ok := i_lit.(*ast.IntegerLiteral)
-// 	if !ok {
-// 		type_error(t, "IntegerLiteral", i_lit)
-// 		return false
-// 	}
+func test_integer_literal(t *testing.T, i_lit ast.Expression, value int64) bool {
+	intgr, ok := i_lit.(*ast.IntegerLiteral)
+	if !ok {
+		type_error(t, "IntegerLiteral", i_lit)
+		return false
+	}
 
-// 	if intgr.Value != value {
-// 		t.Errorf("Incorrect value %d. Expected %d", intgr.Value, value)
-// 		return false
-// 	}
+	if intgr.Value != value {
+		t.Errorf("Incorrect value %d. Expected %d", intgr.Value, value)
+		return false
+	}
 
-// 	if intgr.TokenLiteral() != fmt.Sprintf("%d", value) {
-// 		t.Errorf("Incorrect token literal: %s. Expected %d.", intgr.TokenLiteral(), value)
-// 		return false
-// 	}
+	if intgr.TokenLiteral() != fmt.Sprintf("%d", value) {
+		t.Errorf("Incorrect token literal: %s. Expected %d.", intgr.TokenLiteral(), value)
+		return false
+	}
 
-// 	return true
-// }
+	return true
+}
 
 // Test Suite
 
@@ -105,8 +105,6 @@ return 993222;
 `
 
 	statements := ParseProgram(lexer.Tokenize(input))
-
-	fmt.Println(statements)
 
 	if len(statements) != 3 {
 		statement_error(t, 3, len(statements))
@@ -267,54 +265,50 @@ return 993222;
 // 	}
 // }
 
-// func TestParsingInfixExpressions(t *testing.T) {
-// 	infix_tests := []struct {
-// 		input     string
-// 		left_val  int64
-// 		operator  string
-// 		right_val int64
-// 	}{
-// 		{"5 + 5", 5, "+", 5},
-// 		{"5 - 5", 5, "-", 5},
-// 		{"5 * 5", 5, "*", 5},
-// 		{"5 / 5", 5, "/", 5},
-// 		{"5 > 5", 5, ">", 5},
-// 		{"5 < 5", 5, "<", 5},
-// 		{"5 == 5", 5, "==", 5},
-// 		{"5 != 5", 5, "!=", 5},
-// 	}
+func TestParsingInfixExpressions(t *testing.T) {
+	infix_tests := []struct {
+		input     string
+		left_val  int64
+		operator  string
+		right_val int64
+	}{
+		{"5 + 5", 5, "+", 5},
+		{"5 - 5", 5, "-", 5},
+		{"5 * 5", 5, "*", 5},
+		{"5 / 5", 5, "/", 5},
+		{"5 > 5", 5, ">", 5},
+		{"5 < 5", 5, "<", 5},
+		{"5 == 5", 5, "==", 5},
+		{"5 != 5", 5, "!=", 5},
+	}
 
-// 	for _, test := range infix_tests {
-// 		lex := lexer.New(test.input)
-// 		psr := New(lex)
+	for _, test := range infix_tests {
+		tokens := lexer.Tokenize(test.input)
+		statements := ParseProgram(tokens)
 
-// 		program := psr.ParseProgram()
+		if len(statements) != 1 {
+			t.Fatalf("Wrong number of statements. Got: %d", len(statements))
+		}
 
-// 		check_parser_errors(t, psr)
+		stmt, ok := statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			type_error(t, "ExpressionStatement", statements[0])
+		}
 
-// 		if len(statements) != 1 {
-// 			t.Fatalf("Wrong number of statements. Got: %d", len(statements))
-// 		}
+		exp, ok := stmt.Expression.(*ast.InfixExpression)
+		if !ok {
+			type_error(t, "InfixExpression", stmt.Expression)
+		}
 
-// 		stmt, ok := statements[0].(*ast.ExpressionStatement)
-// 		if !ok {
-// 			t.Fatalf("Unexpected type: %T for ExpressionStatement", statements[0])
-// 		}
+		if exp.Operator != test.operator {
+			t.Fatalf("Unexpected operator: %s. Expected %s", exp.Operator, test.operator)
+		}
 
-// 		exp, ok := stmt.Expression.(*ast.InfixExpression)
-// 		if !ok {
-// 			t.Fatalf("Unexpected type: %T for InfixExpression", stmt.Expression)
-// 		}
-
-// 		if exp.Operator != test.operator {
-// 			t.Fatalf("Unexpected operator: %s. Expected %s", exp.Operator, test.operator)
-// 		}
-
-// 		if !test_integer_literal(t, exp.Left, test.left_val) {
-// 			return
-// 		}
-// 	}
-// }
+		if !test_integer_literal(t, exp.Left, test.left_val) {
+			return
+		}
+	}
+}
 
 // func TestOperatorPrecedence(t *testing.T) {
 // 	tests := []struct {
