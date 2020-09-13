@@ -20,11 +20,6 @@ const (
 	CALL
 )
 
-type (
-	infix_fn  func(ast.Expression, token.Token, []token.Token) (ast.Expression, int)
-	prefix_fn func([]token.Token) (ast.Expression, int)
-)
-
 func token_is(tok token.Token, t_type token.TokenType) bool {
 	return tok.Type == t_type
 }
@@ -46,6 +41,15 @@ func advance_until(tokens []token.Token, t_type token.TokenType) []token.Token {
 	return advance_until(tokens[1:], t_type)
 }
 
+func parse_integer_literal(intgr token.Token) ast.Expression {
+	value, err := strconv.ParseInt(intgr.Literal, 0, 64)
+	if err != nil {
+		return nil
+	}
+
+	return &ast.IntegerLiteral{Token: intgr, Value: value}
+}
+
 /* Parses prefix expressions (such as !5 or -15)
  * Current token either ! or -.
  * function advances token in order to capture expression.
@@ -63,30 +67,130 @@ func parse_prefix_expression(tok token.Token, tokens []token.Token) (ast.Express
 	}, remaining
 }
 
-func parse_integer_literal(intgr token.Token) ast.Expression {
-	value, err := strconv.ParseInt(intgr.Literal, 0, 64)
-	if err != nil {
-		return nil
+func parse_block_statement(tok token.Token, tokens []token.Token) (*ast.BlockStatement, []token.Token) {
+
+	var statements []ast.Statement
+
+	// if () {
+	// ...
+	// }
+	// ^
+	// Collect statements until reaching '}' or end of file (EOF)
+	for !token_is(tok, token.RBRACE) && !token_is(tok, token.EOF) {
+		stmt, remaining := parse_statement(tokens)
+
+		if stmt != nil {
+			statements = append(statements, stmt)
+		}
+
+		// Advance token in loop condition
+		tok, _ = next_token(remaining)
 	}
 
-	return &ast.IntegerLiteral{Token: intgr, Value: value}
+	// advance_until() should yield same slice as advancing in loop
+	return &ast.BlockStatement{
+		Token:      tok,
+		Statements: statements,
+	}, advance_until(tokens, token.RBRACE)
+}
+
+func parse_grouped_expression(tok token.Token, tokens []token.Token) (ast.Expression, []token.Token) {
+
+	expr, remaining := parse_expression(tok, tokens, LOWEST)
+
+	next, rest := next_token(remaining)
+
+	if !token_is(next, token.RPAREN) {
+		return nil, []token.Token{}
+	}
+
+	return expr, rest
+}
+
+func parse_if_expression(tok token.Token, tokens []token.Token) (ast.Expression, []token.Token) {
+
+	var alternative *ast.BlockStatement
+
+	lparen, rest := next_token(tokens)
+
+	// if (
+	//    ^
+	if !token_is(lparen, token.LPAREN) {
+		return nil, []token.Token{}
+	}
+
+	// Conditional expression
+	next, rest := next_token(rest)
+
+	condition, remaining := parse_expression(next, rest, LOWEST)
+
+	rparen, rest := next_token(remaining)
+
+	// if () {
+	//     ^
+	if !token_is(rparen, token.RPAREN) {
+		return nil, []token.Token{}
+	}
+
+	lbrace, rest := next_token(rest)
+
+	// if () {
+	//       ^
+	if !token_is(lbrace, token.LBRACE) {
+		return nil, []token.Token{}
+	}
+
+	// if () {
+	// > ...
+	// }
+	consequence, rest := parse_block_statement(lbrace, rest)
+
+	fmt.Println("consequence", consequence)
+
+	elseblk, rest := next_token(rest)
+
+	if token_is(elseblk, token.ELSE) {
+		lbrace, rest := next_token(rest)
+
+		// else {
+		//      ^
+		if !token_is(lbrace, token.LBRACE) {
+			return nil, []token.Token{}
+		}
+
+		alternative, rest = parse_block_statement(lbrace, rest)
+	}
+
+	return &ast.IfExpression{
+		Token:       tok,
+		Condition:   condition,
+		Alternative: alternative,
+		Consequence: consequence,
+	}, rest
 }
 
 func parse_prefix(tok token.Token, tokens []token.Token) (ast.Expression, []token.Token) {
 
 	switch tok.Type {
+	case token.IF:
+		return parse_if_expression(tok, tokens)
 	case token.INT:
 		return parse_integer_literal(tok), tokens
+	case token.IDENT:
+		return parse_identifier(tok), tokens
 	// Boolean
 	case token.TRUE:
 		fallthrough
 	case token.FALSE:
+		// tokens[1:] here to advance past semicolon
 		return parse_boolean(tok), tokens[1:]
 	// Prefix expression
 	case token.BANG:
 		fallthrough
 	case token.MINUS:
 		return parse_prefix_expression(tok, tokens)
+	case token.LPAREN:
+		return parse_grouped_expression(tok, tokens)
 	default:
 		return nil, tokens
 	}
@@ -111,72 +215,6 @@ func get_precedence(tok token.Token) int {
 
 	return LOWEST
 }
-
-// func (psr *Parser) parse_block_statement() *ast.BlockStatement {
-// 	block := &ast.BlockStatement{
-// 		Token:      psr.cur_token,
-// 		Statements: []ast.Statement{},
-// 	}
-
-// 	psr.next_token()
-
-// 	// if () {
-// 	// ...
-// 	// }
-// 	// ^
-// 	// Collect statements until reaching '}' or end of file (EOF)
-// 	for !psr.cur_token_is(token.RBRACE) && !psr.cur_token_is(token.EOF) {
-// 		stmt := psr.parse_statement()
-// 		if stmt != nil {
-// 			block.Statements = append(block.Statements, stmt)
-// 		}
-
-// 		psr.next_token()
-// 	}
-
-// 	return block
-// }
-
-// func (psr *Parser) parse_if_expression() ast.Expression {
-// 	expression := &ast.IfExpression{Token: psr.cur_token}
-
-// 	// if (
-// 	//    ^
-// 	if !psr.expect_peek(token.LPAREN) {
-// 		return nil
-// 	}
-
-// 	psr.next_token()
-// 	expression.Condition = psr.parse_expression(LOWEST)
-
-// 	// if () {
-// 	//     ^
-// 	if !psr.expect_peek(token.RPAREN) {
-// 		return nil
-// 	}
-
-// 	// if () {
-// 	//       ^
-// 	if !psr.expect_peek(token.LBRACE) {
-// 		return nil
-// 	}
-
-// 	expression.Consequence = psr.parse_block_statement()
-
-// 	if psr.peek_token_is(token.ELSE) {
-// 		psr.next_token()
-
-// 		// else {
-// 		//      ^
-// 		if !psr.expect_peek(token.LBRACE) {
-// 			return nil
-// 		}
-
-// 		expression.Alternative = psr.parse_block_statement()
-// 	}
-
-// 	return expression
-// }
 
 // Parse let statement, returning statement and number of tokens 'consumed'
 func parse_let_statement(let token.Token, tokens []token.Token) (*ast.LetStatement, []token.Token) {
@@ -305,22 +343,11 @@ func parse_identifier(tok token.Token) ast.Expression {
 // 	return fn
 // }
 
-// func (psr *Parser) parse_grouped_expression() ast.Expression {
-// 	psr.next_token()
-
-// 	expr := psr.parse_expression(LOWEST)
-
-// 	if !psr.expect_peek(token.RPAREN) {
-// 		return nil
-// 	}
-
-// 	return expr
-// }
-
 func parse_infix_expression(left ast.Expression, tok token.Token, tokens []token.Token) (ast.Expression, []token.Token) {
 
 	// Expression token
 	next, rest := next_token(tokens)
+
 	rhs, remaining := parse_expression(next, rest, get_precedence(tok))
 
 	return &ast.InfixExpression{
@@ -341,9 +368,7 @@ func parse_expression(tok token.Token, tokens []token.Token, precedence int) (as
 
 		tok, remaining = next_token(remaining)
 
-		infix, remaining := parse_infix_expression(left_expr, tok, remaining)
-
-		return infix, remaining
+		return parse_infix_expression(left_expr, tok, remaining)
 	}
 
 	return left_expr, remaining
@@ -383,7 +408,7 @@ func ParseProgram(tokens []token.Token) []ast.Statement {
 
 	stmt, rest := parse_statement(tokens)
 
-	fmt.Println(stmt)
+	fmt.Println()
 
 	if len(rest) == 0 {
 		return []ast.Statement{}

@@ -306,6 +306,41 @@ func TestParsingInfixExpressions(t *testing.T) {
 	}
 }
 
+func TestIfStatement(t *testing.T) {
+	input := `if (x < y) { x + y }`
+
+	tokens := lexer.Tokenize(input)
+
+	statements := ParseProgram(tokens)
+
+	if len(statements) != 1 {
+		statement_error(t, 1, len(statements))
+	}
+
+	stmt, ok := statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		type_error(t, "ExpressionStatement", statements[0])
+	}
+
+	exp, ok := stmt.Expression.(*ast.IfExpression)
+	if !ok {
+		type_error(t, "IfExpression", stmt.Expression)
+	}
+
+	if len(exp.Consequence.Statements) != 1 {
+		statement_error(t, 1, len(exp.Consequence.Statements))
+	}
+
+	consequence, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		type_error(t, "ExpressionStatement", exp.Consequence.Statements[0])
+	}
+
+	if consequence == nil {
+		return
+	}
+}
+
 // func TestOperatorPrecedence(t *testing.T) {
 // 	tests := []struct {
 // 		input    string
@@ -336,44 +371,6 @@ func TestParsingInfixExpressions(t *testing.T) {
 // 		if actual != test.expected {
 // 			t.Errorf("Unexpected output. Expected %q. Got %q", test.expected, actual)
 // 		}
-// 	}
-// }
-
-// func TestIfStatement(t *testing.T) {
-// 	input := `if (x < y) { x }`
-
-// 	lex := lexer.New(input)
-// 	psr := New(lex)
-
-// 	program := psr.ParseProgram()
-
-// 	check_parser_errors(t, psr)
-
-// 	if len(statements) != 1 {
-// 		t.Fatalf("Wrong number of statements. Got: %d", len(statements))
-// 	}
-
-// 	stmt, ok := statements[0].(*ast.ExpressionStatement)
-// 	if !ok {
-// 		t.Fatalf("Unexpected type: %T for ExpressionStatement", statements[0])
-// 	}
-
-// 	exp, ok := stmt.Expression.(*ast.IfExpression)
-// 	if !ok {
-// 		t.Fatalf("Unexpected type: %T for IfExpression", stmt.Expression)
-// 	}
-
-// 	if len(exp.Consequence.Statements) != 1 {
-// 		t.Errorf("Wrong number of Statements: %d", len(exp.Consequence.Statements))
-// 	}
-
-// 	consequence, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
-// 	if !ok {
-// 		t.Errorf("Unexpected type: %T for ExpressionStatement", exp.Consequence.Statements[0])
-// 	}
-
-// 	if consequence == nil {
-// 		return
 // 	}
 // }
 
